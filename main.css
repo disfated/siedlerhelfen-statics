@@ -19,5 +19,5 @@
 .res-info-actions { text-align: right; font-size: smaller; margin-bottom: 4px; float: right; }
 .res-info-actions > a { margin-left: 8px; }
 
-.loading { background: url("/images/loading.gif") no-repeat 50% 50%; width: 24px; height: 24px; display: inline-block; }
+.loading { background: url("http://gadfly.no-ip.org/images/loading.gif") no-repeat 50% 50%; width: 24px; height: 24px; display: inline-block; }
 
