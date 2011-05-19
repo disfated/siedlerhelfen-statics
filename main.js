@@ -308,7 +308,7 @@ function globalMenu() {
 				var stored = $.storage.get(storeName);
 				if (stored) {
 					if (Date.now() - stored.date > 3600000) {
-						$.storage.rm(storeName);
+						$.storage.del(storeName);
 					} else {
 						resourcesInfo = stored.data;
 					};
