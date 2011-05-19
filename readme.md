@@ -1,5 +1,4 @@
-
-## JavaScripts for [siedlerhelfen](http://gadfly.no-ip.org/siedler)
+# JavaScripts for [siedlerhelfen](http://gadfly.no-ip.org/siedler)
 
  - Основной репозитарий <https://github.com/6vasia/siedlerhelfen>
 
