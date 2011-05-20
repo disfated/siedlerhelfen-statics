@@ -56,6 +56,231 @@ for (id in resources) {
 	res.icon = '/images/' + id.toLowerCase() + '.png';
 };
 
+
+$['EventEmitter'] = (function(isArray) {
+	
+	
+	function EventEmitter() {
+		this._events = {};
+	};
+	
+	EventEmitter.prototype.emit = function(type) {
+		
+		var handler = this._events[type];
+		if (!handler) return this;
+		
+		if (typeof handler == 'function') {
+			switch (arguments.length) {
+				// fast cases
+				case 1:
+					handler.call(this);
+					break;
+				case 2:
+					handler.call(this, arguments[1]);
+					break;
+				case 3:
+					handler.call(this, arguments[1], arguments[2]);
+					break;
+				// slower
+				default:
+					var args = Array.prototype.slice.call(arguments, 1);
+					handler.apply(this, args);
+			};
+		} else if (isArray(handler)) {
+			var args = Array.prototype.slice.call(arguments, 1);
+			var listeners = handler.slice();
+			for (var i = 0, l = listeners.length; i < l; i++) {
+				listeners[i].apply(this, args);
+			};
+		};
+		return this;
+	};
+	
+	EventEmitter.prototype.addListener = function(type, listener) {
+		if (typeof type != 'string') {
+			throw new Error("addListener() expects 'type' to be String");
+		};
+		if (typeof listener != 'function') {
+			throw new Error("addListener() expects 'listener' to be Function");
+		};
+		var list = this._events[type];
+		if (!list) {
+			this._events[type] = listener;
+		} else if (isArray(list)) {
+			list.push(listener);
+		} else {
+			this._events[type] = [list, listener];
+		};
+		return this;
+	};
+	
+	EventEmitter.prototype.once = function(type, listener) {
+		var self = this;
+		function g() {
+			self.removeListener(type, g);
+			listener.apply(this, arguments);
+		};
+		g.listener = listener;
+		return self.addListener(type, g);
+	};
+	
+	EventEmitter.prototype.removeListener = function(type, listener) {
+		if (typeof type != 'string') {
+			throw new Error("removeListener() expects 'type' to be String");
+		};
+		if (typeof listener != 'function') {
+			throw new Error("removeListener() expects 'listener' to be Function");
+		};
+		var list = this._events[type];
+		if (list) {
+			if (isArray(list)) {
+				var position = -1;
+				for (var i = 0, length = list.length; i < length; i++) {
+					if (list[i] === listener || (list[i].listener && list[i].listener === listener)) {
+						position = i;
+						break;
+					};
+				};
+				if (position >= 0) {
+					list.splice(position, 1);
+					if (list.length == 0) {
+						delete this._events[type];
+					};
+				};
+			} else if (list === listener || (list.listener && list.listener === listener)) {
+				delete this._events[type];
+			};
+		};
+		return this;
+	};
+	
+	EventEmitter.prototype.removeListeners = function(type) {
+		if (typeof type != 'string') {
+			throw new Error("removeListeners() expects 'type' to be String");
+		};
+		if (type == '*') {
+			this._events = {};
+		} else if (this._events[type]) {
+			delete this._events[type];
+		};
+		return this;
+	};
+	
+	EventEmitter.prototype.listeners = function(type) {
+		if (typeof type != 'string') {
+			throw new Error("listeners() expects 'type' to be String");
+		};
+		var list = this._events[type];
+		if (!list) {
+			return [];
+		} else if (isArray(list)) {
+			return list;
+		} else {
+			return [list];
+		};
+	};
+	
+	// sugar
+	EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+	EventEmitter.prototype.ls = EventEmitter.prototype.listeners;
+	EventEmitter.prototype.rm = function(type, listener) {
+		return (typeof listener == 'undefined') ? this.removeListeners(type) : this.removeListener(type, listener);
+	};
+	
+	return EventEmitter;
+
+
+})(Array.isArray || jQuery.isArray);
+
+
+var resourcesInfo = $.extend(new $.EventEmitter(), {
+	
+	_data: null,
+	_date: null,
+	
+	storeName: 'resourcesInfo',
+	expire: 3600000, // 1 hour
+	url: '/siedler/info.json',
+	
+	_loading: false,
+	
+	_expired: function(date) {
+		return (Date.now() - this._date) > this.expire;
+	},
+	
+	_reset: function() {
+		return this._set(null, null);
+	},
+	
+	_set: function(data, date) {
+		this._data = data;
+		this._date = date || Date.now();
+		return this;
+	},
+	
+	_store: function() {
+		if ($.browser.storage) {
+			$.storage.set(this.storeName, {
+				date : this._date,
+				data : this._data
+			});
+		};
+		return this;
+	},
+	
+	_restore: function() {
+		if ($.browser.storage) {
+			var stored = $.storage.get(this.storeName);
+			if (stored) {
+				this._set(stored.data, stored.date);
+				return true;
+			};
+		};
+		return false;
+	},
+	
+	_unstore: function() {
+		$.browser.storage && $.storage.del(this.storeName);
+		return this;
+	},
+	
+	get: function() {
+		var self = this;
+		if (self._data != null) {
+			self._expired() ? self._reset().get() : self.emit('get', self._data);
+		} else if (self._restore()) {
+			self._expired() ? self._unstore()._reset().get() : self.emit('get', self._data);
+		} else {
+			self.update();
+		};
+		return self;
+	},
+	
+	update: function() {
+		var self = this;
+		if (!self._loading) {
+			self._loading = true;
+			$.getJSON(self.url)
+				.success(function(data, status, request) {
+					if (data == null) {
+						self.emit('error', new Error('Null data'));
+					} else {
+						self._set(data)._store().emit('update', data);
+					};
+				})
+				.error(function(request, status, error) {
+					self.emit('error', error);
+				})
+				.complete(function() {
+					self._loading = false;
+				});
+		};
+		return self;
+	}
+	
+});
+
+
 Number.prototype.resources = function() {
 	return this.valueOf() < 1000 ? this.toString() : this.toString().replace(/\B(?=(?:\d{3})+(?!\d))/g, '.');
 };
@@ -187,9 +412,10 @@ function tradeTemplates() {
 	}).appendTo($td);
 	$td.appendTo($row);
 	
-	$form.find('input[type=submit]').click(function() {
+	$form.bind('submit', function() {
 		templates[lastUsedName] = getTemplate();
 		update();
+		resourcesInfo._reset()._unstore();
 	});
 	
 	$select.trigger('change');
@@ -250,120 +476,87 @@ function globalMenu() {
 	function resourcesLink() {
 		
 		var $wrap = $(
-			'<span id="global-menu-resources" href="#">' +
+			'<span id="global-menu-resources">' +
 				'<a href="#resources">Ресурсы</a>' +
 				'<div class="res-info-pane">' +
 					'<div class="res-info-actions">' +
 						'<a href="#refresh">Обновить</a>' +
 					'</div>' +
-					'<ul class="res-info-res" />' +
 				'</div>' +
 			'</span>'
 		);
 		
-		var storeName = 'resourcesInfo';
-		var resourcesInfo = null;
-		var loading = false;
-		var $link = $wrap.find('a[href="#resources"]');
 		var $pane = $wrap.find('.res-info-pane');
-		var $info = $wrap.find('.res-info-res');
-		$link.click(function() {
+		var $error  = $('<span class="res-info-error" />').hide().appendTo($pane);
+		var $loader = $('<span class="loading" />').appendTo($pane);
+		var $data = $('<ul class="res-info-res" />').hide().appendTo($pane);
+		var $resources = {};
+		$.each(resources, function(resourceId, resource) {
+			var elem = $((resource.br ? '<hr>' : '') + '<li title="' + resource.name + '"><img src="' + resource.icon + '" /><span>-</span></li>');
+			$data.append(elem);
+			$resources[resourceId] = elem.find('span');
+		});
+		var $visible = $loader;
+		var loading = true;
+		
+		resourcesInfo.once('get', render);
+		resourcesInfo.on('update', render);
+		resourcesInfo.on('error', error);
+		
+		$wrap.find('a[href="#resources"]').click(function() {
 			$pane.fadeToggle(250);
 			return false;
 		});
 		$wrap.find('a[href="#refresh"]').click(function() {
-			!loading && updateResources();
+			if (!loading) {
+				loader();
+				resourcesInfo.update();
+			};
 			return false;
 		});
-		getResources(false);
+		
+		resourcesInfo.get();
 		
 		return $wrap;
 		
-		function renderResources() {
-			if (resourcesInfo == null) {
-				$info.html('Нет данных');
-			} else {
-				var tab;
-				$info.html(
-					$.map(resources, function(resource, resourceId) {
-						if (!resourceId in resourcesInfo) return null;
-						return (resource.br ? '<hr>' : '') + '<li title="' + resource.name + '"><img src="' + resource.icon + '" /><span>' + resourcesInfo[resourceId].resources() + '</span></li>';
-					}).join('')
-				);
+		function swap($elem) {
+			$visible.hide();
+			$visible = $elem.show();
+		};
+		
+		function error(error) {
+			if (loading) {
+				swap($error.html('Ошибка:').append($('<pre>').text(error)));
+				loading = false;
 			};
 		};
 		
-		function renderError(error) {
-			$info.html('Кто-то что-то напортачил...<br />' + String(error));
-		};
-		
-		function renderLoading() {
-			$info.html('<span class="loading"></span>');
-		};
-		
-		function getResources(force) {
-			
-			if ($.browser.storage) {
-				resourcesInfo = null;
-				var stored = $.storage.get(storeName);
-				if (stored) {
-					if (Date.now() - stored.date > 3600000) {
-						$.storage.del(storeName);
-					} else {
-						resourcesInfo = stored.data;
-					};
-				};
+		function render(data) {
+			for (var resourceId in $resources) {
+				$resources[resourceId].text( (resourceId in data) ? data[resourceId].resources() : '-' );
 			};
-			if (resourcesInfo == null || force) {
-				updateResources();
-			} else {
-				renderResources();
-			};
+			swap($data);
+			loading = false;
 		};
 		
-		function updateResources() {
-			resourcesInfo == null;
-			$.getJSON('/siedler/info.json')
-				.success(function(data, status, request) {
-					if (data == null) {
-						renderError('Null data');
-					} else {
-						$.browser.storage && $.storage.set(storeName, {
-							date : Date.now(),
-							data : data
-						});
-						resourcesInfo = data;
-						renderResources();
-					};
-				})
-				.error(function(request, status, error) {
-					renderError(error);
-				})
-				.complete(function() {
-					loading = false;
-				});
+		function loader() {
+			swap($loader);
 			loading = true;
-			renderLoading();
 		};
 	
 	};
 	
 };
 
-function ready() {
+
+
+$(document).ready(function() {
 	if (/\/trade(\?.+)?$/.test(window.location)) { // we better use <body id="trade-page"> or smth and test it instead
 		resourceSelector('#offer_s, #cost_s');
 		tradeTemplates();
 	};
 	globalMenu();
-};
-
-
-if (typeof chrome !== 'undefined' && chrome.extension) { // debugging as chrome extension
-	ready();
-} else if (!/\?debug[^\/]*$/.test(window.location)) { // do not run script in debug mode
-	$(document).ready(ready);
-};
+});
 
 
 

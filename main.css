@@ -18,6 +18,8 @@
 .res-info-res hr { margin: 3px 5px; padding: 0; border: 0px solid #DDD; }
 .res-info-actions { text-align: right; font-size: smaller; margin-bottom: 4px; float: right; }
 .res-info-actions > a { margin-left: 8px; }
+.res-info-error { color: #C00; display: block; margin: 0.25em 0.25em 1em; }
+.res-info-error pre { white-space: pre-wrap; margin: 0.5em 0 0.5em 1em; border-left: 2px solid #F99; padding-left: 0.5em; color: #000; }
 
 .loading { background: url("http://gadfly.no-ip.org/images/loading.gif") no-repeat 50% 50%; width: 24px; height: 24px; display: inline-block; }
 
