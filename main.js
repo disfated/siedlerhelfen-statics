@@ -57,6 +57,64 @@ for (id in resources) {
 };
 
 
+
+var proviantProducts = {
+	'ProductivityBuffLvl1' : {
+		name : 'Рыбная тарелка',
+		icon : 'sushiplate.png',
+		cost : {
+			Fish: 10,
+		},
+	},
+	'ProductivityBuffLvl2' : {
+		name : 'Бутерброд',
+		icon : 'buffcheesesandwich.png',
+		cost : {
+			Fish: 40,
+			Bread: 20,
+		},
+	},
+	'ProductivityBuffLvl3' : {
+		name : 'Корзинка',
+		icon : 'giftbasket.png',
+		cost : {
+			Fish: 120,
+			Bread: 60,
+			Sausage: 20,
+		},
+	},
+	'AddResource_ConvertBeerToPopulation' : {
+		name : 'Человеки',
+		icon : 'settler.png',
+		cost : {
+			Bread: 60,
+		},
+	},
+	'FillDeposit_Fishfood' : {
+		name : 'Подкормка для рыб',
+		icon : 'bufffishfood01.png',
+		cost : {
+			Bread: 10,
+		},
+	},
+	'FillDeposit_Hunter' : {
+		name : 'Подкормка для зверя',
+		icon : 'meat.png',
+		cost : {
+			Water: 20,
+			Fish: 30,
+		},
+	},
+};
+
+for (var id in proviantProducts) {
+	var proviantProduct = proviantProducts[id];
+	proviantProduct.id = id;
+	proviantProduct.icon = '/images/' + proviantProduct.icon;
+};
+
+
+
 $['EventEmitter'] = (function(isArray) {
 	
 	
@@ -550,8 +608,75 @@ function globalMenu() {
 
 
 
+function proviantSliders() {
+
+	$.each(proviantProducts, function(id, product) {
+		var $elem = $('[name="' + id + '"]');
+		if (!$elem.length) return;
+		var disabled = true;
+		var $slider = $('<div />').slider({
+			disabled: disabled,
+			min: 0,
+			max: 0,
+			range: 'min',
+			value: $elem.val(),
+			slide: function(e, ui) {
+				$elem.val(ui.value);
+			}
+		});
+		$elem.change(function() {
+			$slider.slider('value', this.value);
+		});
+		$('<td class="proviant-slider-cell" />').insertAfter($elem.closest('td')).append($slider);
+		
+		function update(res) {
+			var max = Infinity;
+			disabled = false;
+			$.each(product.cost, function(id, cost) {
+				if (res[id] == null) {
+					max = null;
+					disabled = true;
+					return false;
+				};
+				max = Math.min(max, ~~(res[id] / cost));
+			});
+			$slider.slider('option', 'max', max || 0);
+			$slider.slider('option', 'disabled', disabled);
+		};
+		
+		resourcesInfo.once('get', update);
+		resourcesInfo.on('update', update);
+		resourcesInfo.get();
+		
+	});
+	
+	$('form').submit(function() {
+		resourcesInfo._unstore();
+	});
+	
+};
+
+
+// TODO include this inline
+// <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1/jquery-ui.min.js"></script>
+var script   = document.createElement("script");
+script.type  = "text/javascript";
+script.src   = "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js";
+document.head.appendChild(script);
+
+// TODO include this inline
+$('head').append('<link rel="stylesheet" type="text/css" href="static/aristo/aristo.css" />');
+
+// TODO move this to `onready`
+script.onload = function() {
+	if (/\/proviant$/.test(window.location)) { // we better use <body id="trade-page"> or smth and test it instead
+		proviantSliders();
+	};
+};
+
+
 $(document).ready(function() {
-	if (/\/trade(\?.+)?$/.test(window.location)) { // we better use <body id="trade-page"> or smth and test it instead
+	if (/\/trade$/.test(window.location)) { // we better use <body id="trade-page"> or smth and test it instead
 		resourceSelector('#offer_s, #cost_s');
 		tradeTemplates();
 	};
