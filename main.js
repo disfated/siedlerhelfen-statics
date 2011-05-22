@@ -632,15 +632,15 @@ function proviantSliders() {
 			var max = Infinity;
 			$.each(product.cost, function(id, cost) {
 				if (res[id] == null) {
-					max = null;
-					disabled = true;
+					max = 0;
 					return false;
 				};
 				max = Math.min(max, ~~(res[id] / cost));
 			});
+			max === Infinity && (max = 0);
 			$slider.slider('option', {
-				max: max || 0,
-				disabled: !!max
+				max: max,
+				disabled: !max
 			});
 		};
 		
