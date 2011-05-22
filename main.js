@@ -640,8 +640,10 @@ function proviantSliders() {
 				};
 				max = Math.min(max, ~~(res[id] / cost));
 			});
-			$slider.slider('option', 'max', max || 0);
-			$slider.slider('option', 'disabled', disabled);
+			$slider.slider('option', {
+				max: max || 0,
+				disabled: disabled
+			});
 		};
 		
 		resourcesInfo.once('get', update);
