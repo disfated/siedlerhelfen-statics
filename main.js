@@ -613,9 +613,8 @@ function proviantSliders() {
 	$.each(proviantProducts, function(id, product) {
 		var $elem = $('[name="' + id + '"]');
 		if (!$elem.length) return;
-		var disabled = true;
 		var $slider = $('<div />').slider({
-			disabled: disabled,
+			disabled: true,
 			min: 0,
 			max: 0,
 			range: 'min',
@@ -631,7 +630,6 @@ function proviantSliders() {
 		
 		function update(res) {
 			var max = Infinity;
-			disabled = false;
 			$.each(product.cost, function(id, cost) {
 				if (res[id] == null) {
 					max = null;
@@ -642,7 +640,7 @@ function proviantSliders() {
 			});
 			$slider.slider('option', {
 				max: max || 0,
-				disabled: disabled
+				disabled: !!max
 			});
 		};
 		
