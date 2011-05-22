@@ -659,38 +659,12 @@ function proviantSliders() {
 };
 
 
-!function() {
-	
-	function cickme() {
-		if (/\/proviant$/.test(window.location)) { // we better use <body id="trade-page"> or smth and test it instead
-			proviantSliders();
-		};
-	};
-	
-	// TODO include this inline
-	$('head').append('<link rel="stylesheet" type="text/css" href="https://github.com/disfated/siedlerhelfen-statics/raw/master/aristo/aristo.min.css" />');
-	
-	if ($.ui) {
-		cickme();
-	} else {
-		// TODO include this inline
-		// <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1/jquery-ui.min.js"></script>
-		var script   = document.createElement("script");
-		script.type  = "text/javascript";
-		script.src   = "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js";
-		document.head.appendChild(script);
-
-		// TODO move this to `onready`
-		script.onload = cickme;
-	};
-
-}();
-
-
 $(document).ready(function() {
 	if (/\/trade$/.test(window.location)) { // we better use <body id="trade-page"> or smth and test it instead
 		resourceSelector('#offer_s, #cost_s');
 		tradeTemplates();
+	} else if (/\/proviant$/.test(window.location)) { // we better use <body id="trade-page"> or smth and test it instead
+		proviantSliders();
 	};
 	globalMenu();
 });
