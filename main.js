@@ -665,7 +665,7 @@ script.src   = "https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.
 document.head.appendChild(script);
 
 // TODO include this inline
-$('head').append('<link rel="stylesheet" type="text/css" href="static/aristo/aristo.css" />');
+$('head').append('<link rel="stylesheet" type="text/css" href="https://github.com/disfated/siedlerhelfen-statics/raw/master/aristo/aristo.min.css" />');
 
 // TODO move this to `onready`
 script.onload = function() {
