@@ -544,7 +544,7 @@ function globalMenu() {
 			'</span>'
 		);
 		
-		var $pane = $wrap.find('.res-info-pane');
+		var $pane = $wrap.find('.res-info-pane').hide();
 		var $error  = $('<span class="res-info-error" />').hide().appendTo($pane);
 		var $loader = $('<span class="loading" />').appendTo($pane);
 		var $data = $('<ul class="res-info-res" />').hide().appendTo($pane);
